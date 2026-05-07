@@ -1,0 +1,1347 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07071a;--surface:rgba(255,255,255,0.04);--border:rgba(140,120,255,0.18);
+  --neon1:#a855f7;--neon2:#22d3ee;--neon3:#34d399;--neon4:#f59e0b;
+  --text:#e2e8f0;--muted:#94a3b8;--danger:#ef4444;
+  --card:rgba(255,255,255,0.05);--glow1:rgba(168,85,247,0.3);--glow2:rgba(34,211,238,0.25);
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--neon1);border-radius:2px}
+
+/* HERO */
+#hero{position:relative;height:100vh;min-height:600px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#hero-canvas{position:absolute;inset:0;width:100%;height:100%}
+.hero-content{position:relative;z-index:2;text-align:center;padding:2rem}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--neon2);margin-bottom:1.5rem;backdrop-filter:blur(8px);background:rgba(34,211,238,0.08)}
+.hero-title{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:800;line-height:1.1;margin-bottom:1rem}
+.hero-title span{background:linear-gradient(135deg,var(--neon1),var(--neon2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:clamp(1rem,2vw,1.2rem);color:var(--muted);max-width:520px;margin:0 auto 2rem;line-height:1.6}
+.hero-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.btn-primary{padding:12px 28px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--neon1),#6366f1);color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:all .3s;box-shadow:0 0 20px var(--glow1)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 30px var(--glow1)}
+.btn-outline{padding:12px 28px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:15px;font-weight:600;cursor:pointer;transition:all .3s;backdrop-filter:blur(8px)}
+.btn-outline:hover{border-color:var(--neon2);color:var(--neon2);box-shadow:0 0 20px var(--glow2)}
+.stats-row{display:flex;gap:2rem;justify-content:center;margin-top:3rem;flex-wrap:wrap}
+.stat-item{text-align:center}.stat-num{font-size:1.8rem;font-weight:700;color:var(--neon2)}.stat-lbl{font-size:12px;color:var(--muted);margin-top:2px}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px;animation:bounce 2s infinite}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}
+
+/* NAV */
+#nav{position:sticky;top:0;z-index:100;background:rgba(7,7,26,0.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem}
+.nav-inner{max-width:1200px;margin:0 auto;height:56px;display:flex;align-items:center;gap:1.5rem}
+.nav-logo{font-weight:700;font-size:16px;color:var(--neon1);white-space:nowrap;cursor:pointer}
+.nav-items{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.nav-btn{padding:6px 14px;border-radius:8px;border:none;background:transparent;color:var(--muted);font-size:13px;cursor:pointer;transition:all .2s}
+.nav-btn:hover,.nav-btn.active{background:var(--surface);color:var(--text)}
+.nav-btn.active{color:var(--neon1)}
+.xp-pill{margin-left:8px;padding:4px 12px;border-radius:999px;background:linear-gradient(135deg,rgba(168,85,247,0.2),rgba(99,102,241,0.2));border:1px solid rgba(168,85,247,0.3);font-size:12px;color:var(--neon1);white-space:nowrap}
+
+/* MAIN */
+.page{display:none;max-width:1200px;margin:0 auto;padding:2rem}
+.page.active{display:block}
+
+/* UNIT CARDS */
+.section-header{margin-bottom:2rem}.section-title{font-size:1.8rem;font-weight:700;margin-bottom:.5rem}.section-sub{color:var(--muted);font-size:.95rem}
+.units-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.2rem}
+.unit-card{padding:1.5rem;border-radius:16px;border:1px solid var(--border);background:var(--card);cursor:pointer;transition:all .3s;position:relative;overflow:hidden}
+.unit-card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .3s;border-radius:16px}
+.unit-card:hover::before{opacity:1}
+.unit-card:hover{transform:translateY(-4px)}
+.unit-card.u1:hover{border-color:rgba(168,85,247,0.6);box-shadow:0 8px 32px rgba(168,85,247,0.2)}
+.unit-card.u2:hover{border-color:rgba(34,211,238,0.6);box-shadow:0 8px 32px rgba(34,211,238,0.2)}
+.unit-card.u3:hover{border-color:rgba(239,68,68,0.6);box-shadow:0 8px 32px rgba(239,68,68,0.2)}
+.unit-card.u4:hover{border-color:rgba(52,211,153,0.6);box-shadow:0 8px 32px rgba(52,211,153,0.2)}
+.unit-card.u5:hover{border-color:rgba(245,158,11,0.6);box-shadow:0 8px 32px rgba(245,158,11,0.2)}
+.unit-icon{font-size:2.5rem;margin-bottom:.75rem}
+.unit-title{font-size:1rem;font-weight:600;margin-bottom:.5rem}
+.unit-count{font-size:12px;color:var(--muted)}
+.unit-progress{margin-top:.75rem;height:3px;background:rgba(255,255,255,0.1);border-radius:2px}
+.unit-progress-fill{height:100%;border-radius:2px;transition:width .5s}
+
+/* TOPICS PAGE */
+.back-btn{display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:14px;margin-bottom:1.5rem;transition:all .2s}
+.back-btn:hover{color:var(--text);border-color:var(--neon1)}
+.topics-list{display:flex;flex-direction:column;gap:.75rem}
+.topic-item{padding:1.25rem 1.5rem;border-radius:12px;border:1px solid var(--border);background:var(--card);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:space-between}
+.topic-item:hover{border-color:var(--neon1);transform:translateX(4px)}
+.topic-name{font-weight:500;font-size:.95rem}
+.topic-meta{font-size:12px;color:var(--muted)}
+.topic-arrow{color:var(--neon1);font-size:1.2rem}
+
+/* TOPIC DETAIL */
+.topic-hero{padding:2rem;border-radius:20px;background:linear-gradient(135deg,rgba(168,85,247,0.12),rgba(34,211,238,0.08));border:1px solid var(--border);margin-bottom:2rem}
+.topic-hero h1{font-size:1.8rem;font-weight:700;margin-bottom:.5rem}
+.topic-hero p{color:var(--muted);line-height:1.7}
+.content-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+@media(max-width:700px){.content-grid{grid-template-columns:1fr}}
+.content-card{padding:1.5rem;border-radius:16px;background:var(--card);border:1px solid var(--border)}
+.content-card h3{font-size:.875rem;font-weight:600;color:var(--neon2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1rem}
+.kp-list{list-style:none;display:flex;flex-direction:column;gap:.6rem}
+.kp-list li{font-size:.9rem;color:var(--muted);line-height:1.5;padding-left:1.2rem;position:relative}
+.kp-list li::before{content:'▸';position:absolute;left:0;color:var(--neon1)}
+.tags{display:flex;flex-wrap:wrap;gap:.5rem}
+.tag{padding:4px 12px;border-radius:999px;font-size:12px;background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.25);color:var(--neon2)}
+.tag.adv{background:rgba(52,211,153,0.1);border-color:rgba(52,211,153,0.25);color:var(--neon3)}
+.tag.dis{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);color:var(--danger)}
+.exam-box{padding:1.5rem;border-radius:16px;background:linear-gradient(135deg,rgba(245,158,11,0.08),rgba(168,85,247,0.05));border:1px solid rgba(245,158,11,0.2);margin-bottom:1.5rem}
+.exam-box h3{color:var(--neon4);font-size:.875rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem}
+.exam-points{display:flex;flex-direction:column;gap:.5rem}
+.exam-point{font-size:.9rem;color:var(--muted);padding:.5rem .75rem;background:rgba(245,158,11,0.05);border-radius:8px;border-left:2px solid var(--neon4)}
+
+/* SIMULATION LAB */
+.sim-tabs{display:flex;gap:.5rem;margin-bottom:2rem;flex-wrap:wrap}
+.sim-tab{padding:8px 20px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:14px;transition:all .2s}
+.sim-tab:hover{border-color:var(--neon1);color:var(--text)}
+.sim-tab.active{background:rgba(168,85,247,0.15);border-color:var(--neon1);color:var(--neon1)}
+.sim-panel{padding:1.5rem;border-radius:20px;background:var(--card);border:1px solid var(--border)}
+.sim-controls{display:flex;gap:1rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap}
+.sim-controls label{font-size:13px;color:var(--muted)}
+.sim-select{padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--text);font-size:13px;cursor:pointer}
+.sim-range{accent-color:var(--neon1)}
+.gantt-area{overflow-x:auto;padding-bottom:.5rem}
+.gantt-canvas{border-radius:8px}
+.gantt-legend{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.75rem}
+.gantt-leg-item{display:flex;align-items:center;gap:.4rem;font-size:12px;color:var(--muted)}
+.gantt-leg-color{width:12px;height:12px;border-radius:3px}
+.sim-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.75rem;margin-top:1.5rem}
+.metric-card{padding:1rem;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);text-align:center}
+.metric-val{font-size:1.5rem;font-weight:700;color:var(--neon2)}
+.metric-lbl{font-size:11px;color:var(--muted);margin-top:4px}
+.mem-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:.4rem;margin-bottom:1.5rem}
+.mem-frame{height:56px;border-radius:8px;border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;transition:all .4s;background:rgba(255,255,255,0.03)}
+.mem-frame.occupied{background:rgba(34,211,238,0.12);border-color:var(--neon2);color:var(--neon2)}
+.mem-frame.fault{background:rgba(239,68,68,0.2);border-color:var(--danger);color:var(--danger);animation:pulse .5s}
+.mem-frame.replaced{background:rgba(245,158,11,0.15);border-color:var(--neon4);color:var(--neon4);animation:pulse .5s}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.page-str{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center}
+.page-box{padding:6px 12px;border-radius:6px;background:rgba(255,255,255,0.08);border:1px solid var(--border);font-size:13px;font-weight:500;min-width:36px;text-align:center}
+.page-box.active{background:rgba(168,85,247,0.2);border-color:var(--neon1);color:var(--neon1)}
+
+/* DEADLOCK */
+.dl-canvas-wrap{border-radius:12px;background:rgba(0,0,0,0.3);padding:1rem;display:flex;justify-content:center}
+.dl-svg{font-family:inherit}
+.dl-info{margin-top:1rem;padding:1rem;border-radius:10px;text-align:center;font-size:.9rem}
+.dl-detected{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#fca5a5}
+.dl-safe{background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);color:#6ee7b7}
+
+/* QUIZ */
+.quiz-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;flex-wrap:gap}
+.quiz-prog{flex:1;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;margin:0 1rem}
+.quiz-prog-fill{height:100%;background:linear-gradient(90deg,var(--neon1),var(--neon2));border-radius:3px;transition:width .3s}
+.quiz-timer{padding:6px 16px;border-radius:999px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;font-size:13px;font-weight:600;white-space:nowrap}
+.quiz-timer.warning{background:rgba(239,68,68,0.25);border-color:var(--danger);animation:timerPulse 1s infinite}
+@keyframes timerPulse{0%,100%{opacity:1}50%{opacity:.6}}
+.question-card{padding:2rem;border-radius:20px;background:var(--card);border:1px solid var(--border);margin-bottom:1.5rem}
+.q-difficulty{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:1rem}
+.q-easy{background:rgba(52,211,153,0.15);color:var(--neon3);border:1px solid rgba(52,211,153,0.25)}
+.q-medium{background:rgba(245,158,11,0.15);color:var(--neon4);border:1px solid rgba(245,158,11,0.25)}
+.q-hard{background:rgba(239,68,68,0.15);color:var(--danger);border:1px solid rgba(239,68,68,0.25)}
+.question-text{font-size:1.1rem;font-weight:500;line-height:1.6;margin-bottom:1.5rem}
+.options{display:flex;flex-direction:column;gap:.75rem}
+.option-btn{padding:1rem 1.25rem;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,0.03);color:var(--text);text-align:left;cursor:pointer;transition:all .2s;font-size:.95rem;line-height:1.5}
+.option-btn:hover:not(:disabled){border-color:var(--neon1);background:rgba(168,85,247,0.08);transform:translateX(4px)}
+.option-btn.correct{border-color:var(--neon3);background:rgba(52,211,153,0.12);color:#a7f3d0}
+.option-btn.wrong{border-color:var(--danger);background:rgba(239,68,68,0.12);color:#fca5a5}
+.option-btn.reveal{border-color:var(--neon3);background:rgba(52,211,153,0.06)}
+.explanation{margin-top:1rem;padding:1rem;border-radius:10px;background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.2);font-size:.9rem;color:var(--muted);line-height:1.6}
+.explanation strong{color:var(--neon2)}
+.quiz-nav{display:flex;justify-content:space-between;align-items:center}
+.score-card{text-align:center;padding:3rem 2rem;border-radius:20px;background:linear-gradient(135deg,rgba(168,85,247,0.12),rgba(34,211,238,0.08));border:1px solid var(--border)}
+.score-num{font-size:5rem;font-weight:800;background:linear-gradient(135deg,var(--neon1),var(--neon2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.score-grade{font-size:1.5rem;font-weight:600;margin:.5rem 0}
+.achievements{display:flex;flex-wrap:wrap;gap:.75rem;justify-content:center;margin-top:1.5rem}
+.achievement{padding:6px 16px;border-radius:999px;border:1px solid rgba(245,158,11,0.3);background:rgba(245,158,11,0.1);color:var(--neon4);font-size:12px;display:flex;align-items:center;gap:.4rem}
+
+/* FLASHCARDS */
+.flashcard-area{display:flex;flex-direction:column;align-items:center;gap:1.5rem;padding:1rem 0}
+.flashcard-wrap{perspective:800px;width:100%;max-width:520px;height:280px;cursor:pointer}
+.flashcard{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.4,0,.2,1)}
+.flashcard.flipped{transform:rotateY(180deg)}
+.card-face{position:absolute;inset:0;border-radius:20px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center}
+.card-front{background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(99,102,241,0.12));border:1px solid rgba(168,85,247,0.3)}
+.card-back{background:linear-gradient(135deg,rgba(34,211,238,0.12),rgba(52,211,153,0.08));border:1px solid rgba(34,211,238,0.3);transform:rotateY(180deg)}
+.card-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1rem}
+.card-term{font-size:1.4rem;font-weight:700;line-height:1.3;margin-bottom:.5rem}
+.card-def{font-size:.95rem;color:var(--muted);line-height:1.6}
+.card-nav{display:flex;align-items:center;gap:1.5rem}
+.card-counter{color:var(--muted);font-size:.9rem;min-width:60px;text-align:center}
+.flip-hint{font-size:12px;color:var(--muted);opacity:.7;margin-top:.5rem}
+.fc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.75rem;margin-top:1.5rem}
+.fc-mini{padding:1rem;border-radius:12px;background:var(--card);border:1px solid var(--border);cursor:pointer;transition:all .2s}
+.fc-mini:hover{border-color:var(--neon1);transform:translateY(-2px)}
+.fc-mini-term{font-size:.85rem;font-weight:600;margin-bottom:.35rem}
+.fc-mini-def{font-size:.78rem;color:var(--muted);line-height:1.4}
+
+/* XP OVERLAY */
+.xp-overlay{position:sticky;bottom:0;left:0;right:0;z-index:50;background:rgba(7,7,26,0.95);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:.75rem 2rem}
+.xp-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.xp-bar-wrap{flex:1;min-width:120px;height:8px;background:rgba(255,255,255,0.1);border-radius:4px}
+.xp-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--neon1),var(--neon2));transition:width .8s cubic-bezier(.4,0,.2,1)}
+.xp-info{font-size:13px;color:var(--muted);white-space:nowrap}
+.xp-level{font-size:13px;font-weight:700;color:var(--neon1);white-space:nowrap}
+.xp-toast{position:fixed;top:80px;right:20px;z-index:200;padding:10px 20px;border-radius:12px;background:rgba(168,85,247,0.9);color:#fff;font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(168,85,247,0.4);animation:slideIn .3s,fadeOut .3s 2s forwards;pointer-events:none}
+@keyframes slideIn{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes fadeOut{to{opacity:0}}
+
+/* MISC */
+.divider{height:1px;background:var(--border);margin:2rem 0}
+.chip{display:inline-flex;align-items:center;gap:.3rem;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.chip.unit1{background:rgba(168,85,247,0.12);color:#c084fc;border:1px solid rgba(168,85,247,0.2)}
+.chip.unit2{background:rgba(34,211,238,0.12);color:#67e8f9;border:1px solid rgba(34,211,238,0.2)}
+.chip.unit3{background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(239,68,68,0.2)}
+.chip.unit4{background:rgba(52,211,153,0.12);color:#6ee7b7;border:1px solid rgba(52,211,153,0.2)}
+.chip.unit5{background:rgba(245,158,11,0.12);color:#fcd34d;border:1px solid rgba(245,158,11,0.2)}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-inner">
+    <span class="nav-logo" onclick="showPage('home')">⚡ OS.learn</span>
+    <div class="nav-items">
+      <button class="nav-btn active" onclick="showPage('home')">Home</button>
+      <button class="nav-btn" onclick="showPage('units')">Units</button>
+      <button class="nav-btn" onclick="showPage('simlab')">Simulations</button>
+      <button class="nav-btn" onclick="showPage('quiz')">Quiz</button>
+      <button class="nav-btn" onclick="showPage('revision')">Revision</button>
+    </div>
+    <div class="xp-pill">⚡ <span id="nav-xp">0</span> XP</div>
+  </div>
+</nav>
+
+<!-- HERO PAGE -->
+<div id="page-home" class="page active" style="padding:0;max-width:100%">
+  <section id="hero">
+    <canvas id="hero-canvas"></canvas>
+    <div class="hero-content">
+      <div class="hero-badge">🎓 Operating Systems — Complete Learning Platform</div>
+      <h1 class="hero-title">Master <span>Operating Systems</span><br>in 3D</h1>
+      <p class="hero-sub">Interactive simulations, animated algorithms, live visualizations — everything you need for OS mastery.</p>
+      <div class="hero-btns">
+        <button class="btn-primary" onclick="showPage('units')">Start Learning →</button>
+        <button class="btn-outline" onclick="showPage('simlab')">🔬 Simulation Lab</button>
+      </div>
+      <div class="stats-row">
+        <div class="stat-item"><div class="stat-num">5</div><div class="stat-lbl">Units</div></div>
+        <div class="stat-item"><div class="stat-num">40+</div><div class="stat-lbl">Topics</div></div>
+        <div class="stat-item"><div class="stat-num">3</div><div class="stat-lbl">Simulators</div></div>
+        <div class="stat-item"><div class="stat-num">30</div><div class="stat-lbl">Quiz Questions</div></div>
+      </div>
+    </div>
+    <div class="scroll-hint">↓ Scroll to explore</div>
+  </section>
+</div>
+
+<!-- UNITS PAGE -->
+<div id="page-units" class="page">
+  <div class="section-header">
+    <h2 class="section-title">📚 All Units</h2>
+    <p class="section-sub">Choose a unit to explore topics, animations, and exam content</p>
+  </div>
+  <div class="units-grid" id="units-grid"></div>
+</div>
+
+<!-- TOPICS PAGE -->
+<div id="page-topics" class="page">
+  <button class="back-btn" onclick="showPage('units')">← Back to Units</button>
+  <div id="topics-content"></div>
+</div>
+
+<!-- TOPIC DETAIL -->
+<div id="page-topic" class="page">
+  <button class="back-btn" id="topic-back-btn">← Back</button>
+  <div id="topic-content"></div>
+</div>
+
+<!-- SIM LAB -->
+<div id="page-simlab" class="page">
+  <div class="section-header">
+    <h2 class="section-title">🔬 Simulation Laboratory</h2>
+    <p class="section-sub">Interactive live simulations of OS algorithms</p>
+  </div>
+  <div class="sim-tabs">
+    <button class="sim-tab active" onclick="switchSim('cpu')">⚙️ CPU Scheduling</button>
+    <button class="sim-tab" onclick="switchSim('mem')">🧠 Memory Paging</button>
+    <button class="sim-tab" onclick="switchSim('dl')">🔒 Deadlock</button>
+  </div>
+  <!-- CPU Scheduling -->
+  <div id="sim-cpu" class="sim-panel">
+    <h3 style="margin-bottom:1rem;font-size:1.1rem">CPU Scheduling Simulator</h3>
+    <div class="sim-controls">
+      <label>Algorithm:</label>
+      <select class="sim-select" id="cpu-algo" onchange="runCPUSim()">
+        <option value="fcfs">FCFS</option>
+        <option value="sjf">SJF (Non-preemptive)</option>
+        <option value="rr">Round Robin</option>
+        <option value="priority">Priority (Lower = Higher)</option>
+      </select>
+      <label>Speed:</label>
+      <input type="range" class="sim-range" id="cpu-speed" min="1" max="5" value="3" style="width:80px">
+      <button class="btn-outline" onclick="runCPUSim()" style="padding:6px 16px;font-size:13px">▶ Run</button>
+      <button class="btn-outline" onclick="randomizeCPU()" style="padding:6px 16px;font-size:13px">🎲 Random</button>
+    </div>
+    <div id="process-inputs" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:.75rem;margin-bottom:1.5rem"></div>
+    <div class="gantt-area"><canvas id="gantt-canvas" class="gantt-canvas" height="120"></canvas></div>
+    <div class="gantt-legend" id="gantt-legend"></div>
+    <div class="sim-metrics" id="cpu-metrics"></div>
+  </div>
+  <!-- Memory Paging -->
+  <div id="sim-mem" class="sim-panel" style="display:none">
+    <h3 style="margin-bottom:1rem;font-size:1.1rem">Page Replacement Simulator</h3>
+    <div class="sim-controls">
+      <label>Algorithm:</label>
+      <select class="sim-select" id="mem-algo" onchange="runMemSim()">
+        <option value="fifo">FIFO</option>
+        <option value="lru">LRU</option>
+        <option value="optimal">Optimal</option>
+      </select>
+      <label>Frames: <strong id="frame-count-lbl">4</strong></label>
+      <input type="range" class="sim-range" id="frame-count" min="2" max="6" value="4" oninput="this.previousElementSibling.textContent='Frames: '+this.value;runMemSim()" style="width:80px">
+      <button class="btn-outline" onclick="randomizeMem()" style="padding:6px 16px;font-size:13px">🎲 Random</button>
+    </div>
+    <div style="margin-bottom:1rem">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:.5rem">Page Reference String:</div>
+      <div class="page-str" id="page-str-display"></div>
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:.75rem">Memory Frames:</div>
+    <div class="mem-grid" id="mem-frames"></div>
+    <div id="mem-step-info" style="font-size:.9rem;color:var(--muted);margin-bottom:.75rem;min-height:1.2rem"></div>
+    <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+      <button class="btn-outline" onclick="memStep()" id="mem-step-btn" style="padding:6px 16px;font-size:13px">▶ Next Step</button>
+      <button class="btn-outline" onclick="memAutoPlay()" id="mem-auto-btn" style="padding:6px 16px;font-size:13px">⏩ Auto Play</button>
+      <button class="btn-outline" onclick="runMemSim()" style="padding:6px 16px;font-size:13px">↺ Reset</button>
+    </div>
+    <div class="sim-metrics" id="mem-metrics" style="margin-top:1.5rem"></div>
+  </div>
+  <!-- Deadlock -->
+  <div id="sim-dl" class="sim-panel" style="display:none">
+    <h3 style="margin-bottom:1rem;font-size:1.1rem">Deadlock Visualization — Resource Allocation Graph</h3>
+    <div class="sim-controls">
+      <label>Scenario:</label>
+      <select class="sim-select" id="dl-scenario" onchange="renderDeadlock()">
+        <option value="deadlock">Deadlock Present</option>
+        <option value="safe">Safe State</option>
+        <option value="partial">Partial Deadlock</option>
+      </select>
+      <button class="btn-outline" onclick="animateDeadlock()" id="dl-animate-btn" style="padding:6px 16px;font-size:13px">🔍 Detect</button>
+    </div>
+    <div class="dl-canvas-wrap">
+      <svg id="dl-svg" class="dl-svg" width="560" height="340" viewBox="0 0 560 340"></svg>
+    </div>
+    <div id="dl-info" class="dl-info" style="display:none"></div>
+    <div style="margin-top:1.5rem">
+      <h4 style="font-size:.875rem;color:var(--muted);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.05em">Theory</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="content-card">
+          <h3>Necessary Conditions</h3>
+          <ul class="kp-list">
+            <li>Mutual Exclusion</li><li>Hold and Wait</li><li>No Preemption</li><li>Circular Wait</li>
+          </ul>
+        </div>
+        <div class="content-card">
+          <h3>Prevention Strategies</h3>
+          <ul class="kp-list">
+            <li>Break Mutual Exclusion</li><li>Require all resources upfront</li><li>Allow preemption</li><li>Impose resource ordering</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ PAGE -->
+<div id="page-quiz" class="page">
+  <div id="quiz-container"></div>
+</div>
+
+<!-- REVISION PAGE -->
+<div id="page-revision" class="page">
+  <div class="section-header">
+    <h2 class="section-title">🃏 Revision Mode</h2>
+    <p class="section-sub">Flashcards to quickly review key OS concepts</p>
+  </div>
+  <div class="flashcard-area">
+    <div class="flashcard-wrap" onclick="flipCard()">
+      <div class="flashcard" id="flashcard">
+        <div class="card-face card-front">
+          <div class="card-label">Term</div>
+          <div class="card-term" id="fc-term">Loading...</div>
+          <div class="flip-hint">👆 Click to flip</div>
+        </div>
+        <div class="card-face card-back">
+          <div class="card-label">Definition</div>
+          <div class="card-def" id="fc-def">...</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-nav">
+      <button class="btn-outline" onclick="prevCard()" style="padding:8px 20px;font-size:14px">← Prev</button>
+      <span class="card-counter"><span id="fc-num">1</span> / <span id="fc-total">30</span></span>
+      <button class="btn-outline" onclick="nextCard()" style="padding:8px 20px;font-size:14px">Next →</button>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <h3 style="font-size:1rem;font-weight:600;margin-bottom:1rem;color:var(--muted)">All Terms Quick Reference</h3>
+  <div class="fc-grid" id="fc-grid"></div>
+</div>
+
+<!-- XP OVERLAY -->
+<div class="xp-overlay" id="xp-overlay" style="display:none">
+  <div class="xp-inner">
+    <span class="xp-level" id="xp-level">Level 1</span>
+    <div class="xp-bar-wrap"><div class="xp-bar-fill" id="xp-bar" style="width:0%"></div></div>
+    <span class="xp-info"><span id="xp-val">0</span> / <span id="xp-next">100</span> XP</span>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+
+// ========== DATA ==========
+const UNITS = [
+  {id:1,title:"Introduction to OS",icon:"🖥️",cls:"u1",color:"#a855f7",
+   topics:[
+    {id:"os-def",title:"Definition & Types of OS",examPts:["OS manages hardware/software resources","5 types: Batch, Multiprogramming, Time-Sharing, Real-Time, Distributed","System call = interface between user program & OS"],
+     def:"An Operating System is system software managing hardware/software resources providing common services.",
+     exp:"The OS acts as an intermediary between users and hardware. It manages CPU, memory, I/O, and file systems, providing abstractions so programs don't need to manage hardware directly.",
+     kp:["OS is resource manager and extended machine","Kernel is core part always in memory","Two views: resource allocator & control program","Types based on interaction mode and user count"],
+     examples:["Windows/Linux (general purpose)","Android/iOS (mobile)","FreeRTOS (real-time)","UNIX (multiuser, multitasking)"],adv:["Efficient resource use","User-friendly interface","Security & protection","Multitasking"],dis:["Overhead from OS itself","Security vulnerabilities","Cost of licensed OS"]},
+    {id:"batch",title:"Batch Systems",examPts:["Jobs grouped and executed without interaction","Spooling = Simultaneous Peripheral Operations OnLine","Throughput = jobs/unit time"],
+     def:"Batch OS groups similar jobs together and executes them without user interaction.",
+     exp:"Jobs are collected, batched and submitted. OS runs them sequentially. If I/O needed, CPU can process next job. Early IBM mainframes used this.",
+     kp:["No user interaction during execution","Jobs queued in input spool","Good throughput but poor turnaround","Requires job control language (JCL)"],
+     examples:["Payroll processing","Bank statement generation","Scientific computing batches"],adv:["High CPU utilization","Simple management","Good for repetitive jobs"],dis:["Long turnaround time","No interactivity","Debugging is hard"]},
+    {id:"multiprogramming",title:"Multiprogramming & Time-Sharing",examPts:["Multiprogramming: maximize CPU use","Time-sharing: each user gets CPU slice","Context switch: saving/loading process state"],
+     def:"Multiprogramming keeps multiple programs in memory; CPU switches when one waits for I/O. Time-sharing extends this with time slices per user.",
+     exp:"When Process A waits for I/O, CPU switches to Process B. Time-sharing extends this: each user gets small CPU 'quanta' rapidly — appears simultaneous.",
+     kp:["Time quantum typically 10-100ms in time-sharing","Response time must be < 1 second for time-sharing","Context switch overhead reduces efficiency","Degree of multiprogramming = # concurrent jobs"],
+     examples:["UNIX time-sharing","Cloud servers running many VMs","Gaming PC running game + Discord + browser"],adv:["Better resource utilization","Improved response time","Multiple users simultaneously"],dis:["Complex memory management","Security between processes","Context switch overhead"]},
+    {id:"virtual-machines",title:"Virtual Machines",examPts:["VM provides illusion of dedicated hardware","Hypervisor = VMM (Virtual Machine Monitor)","Type 1: bare-metal, Type 2: hosted"],
+     def:"A virtual machine is an emulation of a computer system providing functionality of a physical computer.",
+     exp:"VMware, VirtualBox create isolated environments running their own OS on top of host OS. Type 1 (Hyper-V) runs on bare metal. Type 2 (VirtualBox) runs on host OS.",
+     kp:["Complete isolation between VMs","Snapshot and rollback capability","Enables running multiple OS on one machine","Security: if guest is compromised, host is safe"],
+     examples:["VMware vSphere (enterprise)","VirtualBox (desktop)","AWS EC2 (cloud)","Docker containers (lightweight VMs)"],adv:["Isolation","Easy backup/restore","Testing environments","Efficient hardware use"],dis:["Performance overhead","Complex to manage","Requires more resources"]}
+   ]},
+  {id:2,title:"Process Management",icon:"⚙️",cls:"u2",color:"#22d3ee",
+   topics:[
+    {id:"process-concept",title:"Process Concept & States",examPts:["Process = program in execution","5 states: New, Ready, Running, Waiting, Terminated","PCB stores all process information"],
+     def:"A process is an active instance of a program in execution, including program counter, stack, and data section.",
+     exp:"Unlike a program (passive entity), a process is active. The OS manages processes using a Process Control Block (PCB) which stores all context needed for context switching.",
+     kp:["PCB contains: PID, state, PC, registers, memory maps, I/O info","Process creation via fork() in UNIX","Scheduler selects which process runs","Parent creates child processes forming process tree"],
+     examples:["Web browser is a process","Word processor while printing is waiting","Server handling 1000 requests as processes"],adv:["Isolation between programs","Can be paused/resumed","Resource accounting per process"],dis:["Memory overhead per process","Context switch cost","IPC complexity"]},
+    {id:"scheduling",title:"CPU Scheduling Algorithms",examPts:["FCFS: simplest, convoy effect","SJF: minimum average waiting time (optimal)","RR: fair, preemptive, depends on quantum","Priority: starvation problem → aging solution"],
+     def:"CPU scheduling decides which process gets CPU when multiple processes are in ready queue.",
+     exp:"Scheduler optimizes criteria: CPU utilization, throughput, turnaround time, waiting time, response time. Different algorithms trade off these criteria differently.",
+     kp:["FCFS: non-preemptive, simple FIFO order","SJF: provably optimal for average waiting time","RR: each process gets fixed time quantum","Priority: starvation solved by aging (increase priority over time)","Multilevel queue: different queues for different process types"],
+     examples:["OS X uses multilevel feedback queue","Linux uses CFS (Completely Fair Scheduler)","Windows uses priority-based preemptive scheduling"],adv:["Maximizes CPU efficiency","Can prioritize important tasks","Fair distribution"],dis:["Starvation in priority scheduling","Overhead of context switching","Hard to predict burst times"]},
+    {id:"threads",title:"Threads & Multithreading",examPts:["Thread = lightweight process (shares address space)","User-level vs Kernel-level threads","Models: many-to-one, one-to-one, many-to-many"],
+     def:"A thread is the smallest unit of CPU execution. Multiple threads share the same process address space.",
+     exp:"Threads within a process share code, data, heap but have separate stack and registers. Creating threads is faster than processes. Java/Python support multithreading natively.",
+     kp:["Thread creation ~10x faster than process","Shared memory makes communication easy but needs synchronization","Hyper-threading: 2 logical CPUs per physical core","Green threads: managed by runtime, not OS"],
+     examples:["Web server: one thread per connection","Game: physics thread + render thread + audio thread","Word processor: one thread typing, one spell-checking"],adv:["Fast creation","Efficient resource sharing","Responsiveness"],dis:["Race conditions","Deadlocks","Hard to debug"]},
+    {id:"ipc",title:"Interprocess Communication (IPC)",examPts:["Two models: shared memory & message passing","Pipe = unidirectional byte stream","Semaphore for synchronization, not just IPC"],
+     def:"IPC mechanisms allow processes to communicate and synchronize with each other.",
+     exp:"Processes need IPC for cooperation. Shared memory is fast but needs synchronization. Message passing is slower but cleaner. UNIX provides pipes, sockets, signals, shared memory, message queues.",
+     kp:["Pipe: anonymous (related processes), named FIFO (any processes)","Socket: network IPC over IP","Semaphore: synchronization primitive","Signal: asynchronous notification (kill -9)","Message queue: async communication"],
+     examples:["Shell pipe: ls | grep .txt","Socket: web browser to web server","Signal: Ctrl+C sends SIGINT"],adv:["Process cooperation","Data sharing","Modular design"],dis:["Synchronization complexity","Performance overhead","Deadlock potential"]}
+   ]},
+  {id:3,title:"Synchronization & Deadlocks",icon:"🔒",cls:"u3",color:"#ef4444",
+   topics:[
+    {id:"critical-section",title:"Critical Section Problem",examPts:["3 requirements: Mutual exclusion, Progress, Bounded waiting","Peterson's solution for 2 processes","Test-and-Set is atomic hardware solution"],
+     def:"The critical section is code that accesses shared resources and must not be executed concurrently by more than one process.",
+     exp:"Race conditions occur when result depends on execution order. Peterson's algorithm uses two variables (turn + flag) to solve CS problem for 2 processes. Hardware solutions use atomic instructions.",
+     kp:["Entry section → critical section → exit section → remainder","Mutex lock: acquire() / release() with busy waiting","Spinlock: CPU spins waiting — good for short waits","Disable interrupts: works on single CPU only"],
+     examples:["Bank transfer: read balance, compute new balance, write — must be atomic","Counter++ in multi-threaded program without sync"],adv:["Prevents race conditions","Ensures data integrity"],dis:["Reduces parallelism","Can cause starvation","Busy waiting wastes CPU"]},
+    {id:"semaphores",title:"Semaphores & Monitors",examPts:["Semaphore: wait(S) decrements, signal(S) increments","Binary semaphore = mutex (0 or 1)","Monitor: high-level sync with condition variables"],
+     def:"A semaphore is an integer variable accessed through atomic wait() and signal() operations for process synchronization.",
+     exp:"Binary semaphores (mutexes) protect critical sections. Counting semaphores control access to N resources. Monitors are language constructs (Java's synchronized) that bundle data with sync methods.",
+     kp:["Counting semaphore: initialized to number of resources","wait(S): if S≤0, process blocks","signal(S): S++, wake waiting process","Deadlock possible if semaphores acquired in wrong order","Java: synchronized keyword, wait(), notify()"],
+     examples:["Mutex protecting a database connection pool","Semaphore(5) for max 5 DB connections","Java synchronized block"],adv:["Simple, general-purpose","Works for any number of resources","No busy waiting (blocking version)"],dis:["Hard to use correctly","Programming errors hard to debug","Not structured like monitors"]},
+    {id:"classical-sync",title:"Classical Synchronization Problems",examPts:["Producer-Consumer: buffer shared between producer/consumer","Readers-Writers: multiple readers OK, writers exclusive","Dining Philosophers: 5 philosophers, 5 forks — deadlock risk"],
+     def:"Classical synchronization problems demonstrate common concurrency challenges and their solutions.",
+     exp:"Producer-Consumer uses a bounded buffer with mutex + two semaphores (empty, full). Readers-Writers allows concurrent reads but exclusive writes. Dining Philosophers shows circular wait.",
+     kp:["Producer-Consumer: P(empty),produce,V(full) / P(full),consume,V(empty)","Reader-Writers: First variant favors readers, second favors writers","Dining Philosophers solution: allow only N-1 philosophers simultaneously, or odd pick left first, even pick right first"],
+     examples:["Web server (producer) and connection pool (consumer)","Database with read-heavy workload (Readers-Writers)"],adv:["Standard patterns for sync","Well-understood solutions"],dis:["Starvation in Readers-Writers","Complex implementation"]},
+    {id:"deadlock",title:"Deadlock Characterization & Handling",examPts:["Coffman conditions: all 4 must hold for deadlock","Banker's Algorithm: deadlock avoidance (safe state check)","Resource allocation graph: cycle = possible deadlock"],
+     def:"Deadlock is a state where a set of processes are permanently blocked, each waiting for resources held by others.",
+     exp:"All 4 Coffman conditions must hold: Mutual exclusion, Hold & Wait, No preemption, Circular wait. Prevention breaks one condition. Banker's Algorithm avoids deadlock by ensuring system stays in 'safe state'.",
+     kp:["Safe state: system can allocate resources and avoid deadlock","Unsafe state ≠ deadlock, but may lead to it","Detection: look for cycle in RAG (single instance) or run detection algorithm","Recovery: process termination or resource preemption"],
+     examples:["Process A holds R1, wants R2; Process B holds R2, wants R1","Traffic gridlock at intersection"],adv:["Banker's Algorithm guarantees no deadlock"],dis:["Prevention limits concurrency","Detection/recovery has overhead"]}
+   ]},
+  {id:4,title:"Memory Management",icon:"🧠",cls:"u4",color:"#34d399",
+   topics:[
+    {id:"addressing",title:"Logical vs Physical Address",examPts:["Logical address = virtual, generated by CPU","Physical address = actual RAM location","MMU translates logical to physical"],
+     def:"Logical address is generated by the CPU; physical address is the actual location in RAM. The MMU performs translation.",
+     exp:"Programs work with logical addresses (virtual). The MMU maps them to physical RAM. This allows memory protection, relocation, and virtual memory larger than physical RAM.",
+     kp:["Base register: added to logical address","Limit register: ensures address is valid","Compile-time binding: absolute addresses (MS-DOS)","Load-time binding: relocatable addresses","Run-time binding: logical addresses, needs MMU"],
+     examples:["Program sees address 0x1000, actually at physical 0x4000 + 0x1000","Java program can't access memory outside JVM"],adv:["Memory protection","Relocation","Abstraction"],dis:["Translation overhead","Requires MMU hardware"]},
+    {id:"paging",title:"Paging & Page Tables",examPts:["Page: logical unit, Frame: physical unit, same size","Page table maps page number → frame number","TLB: hardware cache for page table (reduces access time)"],
+     def:"Paging divides logical memory into fixed-size pages and physical memory into frames. No external fragmentation.",
+     exp:"Logical address: page number + offset. MMU looks up page table to get frame number. Physical address: frame number + offset. TLB caches recent translations (hit ratio ~98%).",
+     kp:["Page size typically 4KB","2-level page table for large address spaces (32-bit: 10+10+12)","Inverted page table: one entry per frame","TLB miss: page walk takes ~100ns extra","Internal fragmentation: last page may not be full"],
+     examples:["32-bit process with 4GB virtual space, 1GB physical RAM","Linux uses 4-level page tables for 64-bit"],adv:["No external fragmentation","Easy memory allocation","Supports virtual memory"],dis:["Internal fragmentation","Page table overhead","TLB miss penalty"]},
+    {id:"virtual-mem",title:"Virtual Memory & Demand Paging",examPts:["Only needed pages loaded (demand paging)","Page fault: page not in memory, OS loads from disk","Thrashing: excessive page faults — reduce multiprogramming"],
+     def:"Virtual memory allows processes to execute even if not completely in physical memory, by loading pages on demand.",
+     exp:"Demand paging loads pages only when accessed. Page fault triggers OS to load page from disk. If physical memory full, page replacement algorithm selects victim. If too many page faults occur: thrashing.",
+     kp:["Page fault handling: ~1-10ms (disk access)","Working set model: W(t,Δ) — pages used in last Δ references","Thrashing: if sum of working sets > physical memory","PFF (Page Fault Frequency) algorithm adjusts resident set size"],
+     examples:["512MB RAM running 8GB worth of programs","JVM garbage collector triggers many page faults"],adv:["Programs larger than physical memory","Better multiprogramming","Less I/O"],dis:["Performance penalty on page faults","Thrashing can halt system","Complex OS code"]},
+    {id:"page-replace",title:"Page Replacement Algorithms",examPts:["FIFO: simple but Belady's anomaly (more frames can cause more faults)","LRU: approximates optimal, no Belady's anomaly","Optimal: lowest page faults but requires future knowledge"],
+     def:"Page replacement algorithms decide which page to evict when a new page must be loaded and memory is full.",
+     exp:"FIFO evicts oldest. LRU evicts least recently used. Optimal (Belady) evicts the page used furthest in future. In practice, LRU implemented via clock algorithm or reference bits.",
+     kp:["Clock (Second-chance) algorithm: approximates LRU efficiently","Reference bit: set to 1 when page accessed","Modified bit (dirty bit): set when page written to","Global vs local replacement affects thrashing"],
+     examples:["Reference string: 1,2,3,4,1,2,5 with 3 frames"],adv:["Optimal: minimum page faults","LRU: good practical performance","FIFO: simple to implement"],dis:["Optimal not implementable in practice","LRU needs hardware support","FIFO has Belady's anomaly"]}
+   ]},
+  {id:5,title:"File Systems & UNIX",icon:"📁",cls:"u5",color:"#f59e0b",
+   topics:[
+    {id:"file-system",title:"File System Concepts",examPts:["File control block (FCB) / inode stores file metadata","3 access methods: sequential, direct, indexed","Directory is a special file containing file entries"],
+     def:"A file system organizes and manages data on storage devices, providing abstraction and naming for stored data.",
+     exp:"Files have attributes (name, type, size, permissions, timestamps) stored in FCB/inode. Directories create hierarchical namespace. Access methods determine how records within a file are accessed.",
+     kp:["Inode: 128 bytes, stores metadata + 15 block pointers","Direct blocks (0-11): small files","Single/double/triple indirect blocks: larger files","Hard link: directory entry pointing to same inode","Soft/symbolic link: separate inode pointing to path"],
+     examples:["ext4 filesystem on Linux","NTFS on Windows","FAT32 on USB drives"],adv:["Organized storage","Access control","Efficient retrieval"],dis:["Fragmentation","Metadata overhead","Corruption risk"]},
+    {id:"disk-scheduling",title:"Disk Scheduling Algorithms",examPts:["FCFS: simple, no optimization","SSTF: minimum seek time, starvation possible","SCAN/Elevator: arm moves back and forth","C-SCAN: uniform wait times"],
+     def:"Disk scheduling algorithms optimize the order of disk I/O requests to minimize seek time.",
+     exp:"Seek time (arm movement) dominates disk access time. SSTF is like greedy — picks closest. SCAN moves arm like elevator. C-SCAN: only services requests on forward pass, then jumps back.",
+     kp:["Seek time: move to correct cylinder","Rotational latency: wait for sector under head","Transfer time: data read/write","LOOK/C-LOOK: don't go to extreme ends","SSDs: no mechanical movement, scheduling matters less"],
+     examples:["Queue: 98,183,37,122,14,124,65 from head=53"],adv:["SSTF: minimum seek","SCAN: fair, no starvation","C-SCAN: more uniform wait"],dis:["SSTF: starvation of far tracks","SCAN: far tracks wait longer"]},
+    {id:"unix-processes",title:"UNIX Processes & Commands",examPts:["fork() creates child as exact copy of parent","exec() replaces process image with new program","wait() suspends parent until child exits","Zombie: terminated child not waited for, Orphan: child whose parent died"],
+     def:"UNIX provides rich process management through system calls and shell commands for creating, controlling, and monitoring processes.",
+     exp:"fork() duplicates process. Child gets PID 0 returned, parent gets child PID. exec() family replaces current program. Signals (SIGKILL, SIGTERM) control processes. Daemons run in background.",
+     kp:["ps aux: list all processes","kill -9 PID: force kill","nice/renice: set/change priority","top/htop: real-time process monitor","nohup cmd &: run in background, ignore hangup","& : background execution, fg/bg: foreground/background"],
+     examples:["Shell creates child via fork(), calls exec() to run ls","init/systemd: PID 1, ancestor of all processes"],adv:["Powerful process control","Script automation","Signal handling"],dis:["Signal handling complexity","Fork overhead for large processes"]},
+    {id:"pipes-ipc",title:"Pipes, Signals & Daemons",examPts:["Anonymous pipe: one-way, related processes only","Named pipe (FIFO): any processes, persists as file","Daemon: background process, no controlling terminal, PID 1 as parent"],
+     def:"Pipes provide unidirectional IPC between processes. Signals provide asynchronous notifications. Daemons are background service processes.",
+     exp:"Pipe created by pipe() syscall gives two FDs. Shell | operator creates pipe between commands. Signals are software interrupts. Daemons created by double-forking, closing stdin/stdout/stderr, becoming session leader.",
+     kp:["SIGHUP(1): terminal closed","SIGINT(2): Ctrl+C","SIGKILL(9): cannot be caught","SIGTERM(15): polite kill","SIGCHLD: child terminated","Double fork to create daemon","syslogd, crond, httpd are examples of daemons"],
+     examples:["ls -la | grep .txt | wc -l","kill -SIGTERM $(pidof nginx)","cron daemon runs scheduled tasks"],adv:["Powerful pipelines","Async process control","Background service capability"],dis:["One-way only for pipes","Signals have limited information","Daemon debugging is harder"]}
+   ]}
+];
+
+const QUIZ_QUESTIONS = [
+  {q:"Which scheduling algorithm guarantees minimum average waiting time?",opts:["FCFS","SJF","Round Robin","Priority"],correct:1,exp:"SJF (Shortest Job First) is mathematically proven to give minimum average waiting time for non-preemptive scheduling.",diff:"medium",unit:2},
+  {q:"What are the four necessary conditions for deadlock (Coffman conditions)?",opts:["Mutex, Hold & Wait, No Preemption, Circular Wait","Starvation, Livelock, No Preemption, Priority","Mutex, No Preemption, Preemption, Circular Wait","Hold & Wait, Starvation, Priority, Circular Wait"],correct:0,exp:"All four Coffman conditions must hold simultaneously for deadlock to occur. Breaking any ONE prevents deadlock.",diff:"hard",unit:3},
+  {q:"Which page replacement algorithm is guaranteed to have the minimum page faults?",opts:["FIFO","LRU","Optimal (OPT)","Clock"],correct:2,exp:"Optimal algorithm evicts the page used furthest in future. It's optimal but requires future knowledge, so not implementable in practice.",diff:"medium",unit:4},
+  {q:"What does a fork() system call return to the child process?",opts:["PID of child","PID of parent","-1 on error","0"],correct:3,exp:"fork() returns 0 to the child process and the child's PID to the parent process. Returns -1 if fork fails.",diff:"easy",unit:5},
+  {q:"Belady's Anomaly occurs in which page replacement algorithm?",opts:["LRU","Optimal","FIFO","Clock"],correct:2,exp:"In FIFO, increasing the number of frames can sometimes INCREASE page faults. This is Belady's Anomaly. Stack-based algorithms (LRU, Optimal) don't suffer from this.",diff:"hard",unit:4},
+  {q:"What is the purpose of the TLB (Translation Lookaside Buffer)?",opts:["Store frequently used files","Cache recent page table translations","Manage disk scheduling","Store process control blocks"],correct:1,exp:"TLB is a fast hardware cache for recently used page table entries, reducing average memory access time. Typical hit ratio is ~98%.",diff:"medium",unit:4},
+  {q:"In Peterson's solution for mutual exclusion, how many processes can it handle?",opts:["1","2","Any number","4"],correct:1,exp:"Peterson's software solution solves the critical section problem for exactly 2 processes using two shared variables: 'turn' and 'flag[]'.",diff:"medium",unit:3},
+  {q:"Which signal cannot be caught or ignored in UNIX?",opts:["SIGTERM (15)","SIGHUP (1)","SIGKILL (9)","SIGINT (2)"],correct:2,exp:"SIGKILL (signal 9) immediately terminates the process and cannot be caught, blocked, or ignored. That's why 'kill -9' always works.",diff:"easy",unit:5},
+  {q:"What is thrashing in virtual memory management?",opts:["Memory leak in application","Excessive page faults reducing CPU utilization","Hard disk physical damage","TLB always missing"],correct:1,exp:"Thrashing occurs when processes spend more time on page swapping than execution. CPU utilization drops severely. Solution: reduce degree of multiprogramming.",diff:"medium",unit:4},
+  {q:"Which type of semaphore can take any non-negative value?",opts:["Binary semaphore","Mutex","Counting semaphore","Spinlock"],correct:2,exp:"Counting semaphore can take any non-negative integer value and is used to control access to a resource pool with N instances.",diff:"easy",unit:3},
+  {q:"In Round Robin scheduling, what happens if quantum is too large?",opts:["More context switches","Degenerates to FCFS","Starvation occurs","CPU underutilized"],correct:1,exp:"If quantum is very large, processes complete within one quantum, making RR behave like FCFS (FIFO). If too small, excessive context switches occur.",diff:"medium",unit:2},
+  {q:"What is a zombie process in UNIX?",opts:["Process consuming excessive CPU","Terminated process whose entry still in process table","Process blocked on I/O","Orphan process"],correct:1,exp:"Zombie (defunct) process has completed execution but still has an entry in process table. Parent hasn't called wait() to read exit status. Not harmful but wastes PID.",diff:"medium",unit:5},
+  {q:"What is the main advantage of paging over contiguous allocation?",opts:["Faster access","No external fragmentation","No internal fragmentation","Simpler implementation"],correct:1,exp:"Paging eliminates external fragmentation since any free frame can be used for any page. However, it may have internal fragmentation (last page may not be full).",diff:"easy",unit:4},
+  {q:"What is a monitor in process synchronization?",opts:["System monitoring tool","High-level synchronization construct with mutual exclusion","Type of semaphore","Hardware instruction"],correct:1,exp:"Monitor is a high-level synchronization construct that encapsulates shared data with procedures that guarantee mutual exclusion. Java's synchronized keyword implements monitors.",diff:"hard",unit:3},
+  {q:"Which disk scheduling algorithm can suffer from starvation?",opts:["FCFS","SCAN","SSTF","C-SCAN"],correct:2,exp:"SSTF (Shortest Seek Time First) always serves the closest request, causing starvation for requests far from the current head position.",diff:"medium",unit:5},
+  {q:"What does PCB (Process Control Block) NOT typically contain?",opts:["Process state","Page file contents","CPU registers","Memory limits"],correct:1,exp:"PCB contains: PID, state, PC, CPU registers, CPU scheduling info, memory management info, I/O status, accounting info. The actual page file contents are on disk, not in PCB.",diff:"hard",unit:2},
+  {q:"In a two-level page table, what is the purpose of the outer page table?",opts:["Store physical frames","Index into inner page tables","Store the page file","Direct memory access"],correct:1,exp:"Two-level paging: outer page table indexes into inner page tables. This reduces memory needed for page table — only allocate inner tables for portions of address space actually used.",diff:"hard",unit:4},
+  {q:"What is the working set model used for?",opts:["Scheduling CPU","Preventing thrashing by managing resident pages","Disk management","File system organization"],correct:1,exp:"Working set W(t,Δ) is the set of pages used in the last Δ time units. OS ensures all working sets fit in memory to prevent thrashing.",diff:"hard",unit:4},
+  {q:"What is the difference between a process and a thread?",opts:["No difference","Thread has its own memory space, process shares","Process has its own memory space, threads in same process share","Threads are faster to schedule"],correct:2,exp:"Processes have separate address spaces. Threads within a process share code, data, heap but have separate stack and registers. Thread creation is ~10x faster than process creation.",diff:"easy",unit:2},
+  {q:"Which IPC mechanism in UNIX can be used between unrelated processes?",opts:["Anonymous pipe","Signal only","Named pipe (FIFO) or socket","Shared memory only"],correct:2,exp:"Anonymous pipes only work between related processes (parent-child). Named pipes (FIFOs) and sockets can be used between unrelated processes.",diff:"medium",unit:5}
+];
+
+const FLASHCARDS = [
+  {t:"Process",d:"Active instance of a program in execution, including its state, memory, and resources."},
+  {t:"Thread",d:"Lightweight execution unit within a process. Threads share address space but have separate stacks."},
+  {t:"PCB (Process Control Block)",d:"Data structure maintained by OS for each process, storing state, PC, registers, memory, I/O info."},
+  {t:"Context Switch",d:"Saving state of current process and loading state of next process. Involves overhead time."},
+  {t:"Semaphore",d:"Integer variable operated atomically via wait()/P() and signal()/V() for synchronization."},
+  {t:"Mutex (Binary Semaphore)",d:"Synchronization object that can be 0 or 1. Provides mutual exclusion for critical sections."},
+  {t:"Deadlock",d:"Permanent block where processes each hold resources and wait for others to release their resources."},
+  {t:"Coffman Conditions",d:"Four conditions for deadlock: Mutual Exclusion, Hold & Wait, No Preemption, Circular Wait."},
+  {t:"Banker's Algorithm",d:"Deadlock avoidance algorithm by Dijkstra. Grants resources only if system remains in safe state."},
+  {t:"Page Fault",d:"Exception when process accesses a page not currently in physical memory, triggering OS to load it."},
+  {t:"TLB",d:"Translation Lookaside Buffer — hardware cache for recent page table entries, speeds up address translation."},
+  {t:"Thrashing",d:"State where process spends more time swapping pages than executing, causing CPU utilization collapse."},
+  {t:"Working Set",d:"Set of pages a process actively uses in a given time interval. Key to preventing thrashing."},
+  {t:"Fork()",d:"UNIX system call that creates a child process as an exact copy of the parent process."},
+  {t:"Exec()",d:"UNIX system call family that replaces current process image with a new program."},
+  {t:"Zombie Process",d:"Process that has terminated but still has a process table entry waiting for parent to call wait()."},
+  {t:"Daemon",d:"Background process with no controlling terminal, typically started at boot to provide system services."},
+  {t:"Pipe",d:"Unidirectional IPC mechanism providing a byte stream between two related processes."},
+  {t:"SIGKILL",d:"Signal 9 in UNIX that immediately terminates a process — cannot be caught, blocked, or ignored."},
+  {t:"inode",d:"Data structure in UNIX file system storing file metadata and pointers to data blocks. Not filename."},
+  {t:"FIFO Page Replacement",d:"Replaces the oldest page in memory. Simple but suffers from Belady's Anomaly."},
+  {t:"LRU Page Replacement",d:"Replaces least recently used page. Good performance, no Belady's anomaly. Needs hardware support."},
+  {t:"Optimal (OPT) Algorithm",d:"Page replacement that evicts page used furthest in future. Minimum page faults, not implementable."},
+  {t:"Logical Address",d:"Address generated by CPU during execution. Also called virtual address. Translated by MMU."},
+  {t:"Physical Address",d:"Actual location in RAM. CPU never sees this — programs always use logical addresses."},
+  {t:"MMU",d:"Memory Management Unit — hardware that translates logical addresses to physical addresses using page tables."},
+  {t:"Round Robin (RR)",d:"Preemptive CPU scheduling where each process gets a fixed time quantum in circular order."},
+  {t:"SJF Scheduling",d:"Shortest Job First — non-preemptive algorithm giving minimum average waiting time (provably optimal)."},
+  {t:"Critical Section",d:"Code segment that accesses shared resources. Must be executed by only one process at a time."},
+  {t:"Monitor",d:"High-level synchronization construct encapsulating shared data with mutually exclusive procedures."}
+];
+
+// ========== APP STATE ==========
+let currentPage = 'home';
+let currentUnit = null;
+let currentTopic = null;
+let xp = 0;
+let quizState = {qIndex:0, answers:[], started:false, timer:null, timeLeft:30};
+let fcIndex = 0;
+let fcFlipped = false;
+let memState = {refStr:[],frameCount:4,algo:'fifo',step:0,frames:[],results:[],autoTimer:null};
+
+// ========== XP SYSTEM ==========
+function addXP(amount, reason) {
+  xp += amount;
+  document.getElementById('nav-xp').textContent = xp;
+  document.getElementById('xp-val').textContent = xp;
+  const level = Math.floor(xp/100)+1;
+  const pct = (xp%100);
+  document.getElementById('xp-level').textContent = 'Level '+level;
+  document.getElementById('xp-bar').style.width = pct+'%';
+  document.getElementById('xp-next').textContent = level*100;
+  showToast('+'+amount+' XP — '+reason);
+  document.getElementById('xp-overlay').style.display = 'block';
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'xp-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2500);
+}
+
+// ========== NAVIGATION ==========
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const map={home:0,units:1,simlab:2,quiz:3,revision:4};
+  const btns = document.querySelectorAll('.nav-btn');
+  if(map[id]!==undefined) btns[map[id]].classList.add('active');
+  window.scrollTo(0,0);
+  if(id==='units') renderUnits();
+  if(id==='quiz' && !quizState.started) initQuiz();
+  if(id==='revision') initFlashcards();
+  if(id==='simlab') {
+    setTimeout(()=>{
+      initCPUSim();
+      runCPUSim();
+      initMemSim();
+      renderDeadlock();
+    }, 50);
+  }
+}
+
+function showUnit(uid) {
+  currentUnit = UNITS.find(u=>u.id===uid);
+  const div = document.getElementById('topics-content');
+  div.innerHTML = `
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem">
+      <div style="font-size:3rem">${currentUnit.icon}</div>
+      <div>
+        <div class="chip ${currentUnit.cls}" style="margin-bottom:.4rem">Unit ${currentUnit.id}</div>
+        <h1 style="font-size:1.6rem;font-weight:700">${currentUnit.title}</h1>
+        <p style="color:var(--muted);font-size:.9rem">${currentUnit.topics.length} topics</p>
+      </div>
+    </div>
+    <div class="topics-list">${currentUnit.topics.map(t=>`
+      <div class="topic-item" onclick="showTopic('${currentUnit.id}','${t.id}')">
+        <div>
+          <div class="topic-name">${t.title}</div>
+          <div class="topic-meta">Exam key points: ${t.examPts.length}</div>
+        </div>
+        <span class="topic-arrow">›</span>
+      </div>`).join('')}</div>`;
+  showPage('topics');
+  addXP(5, 'Opened '+currentUnit.title);
+}
+
+function showTopic(uid, tid) {
+  const unit = UNITS.find(u=>u.id==uid);
+  const t = unit.topics.find(t=>t.id===tid);
+  const div = document.getElementById('topic-content');
+  document.getElementById('topic-back-btn').onclick = ()=>showUnit(uid);
+  div.innerHTML = `
+    <div class="chip ${unit.cls}" style="margin-bottom:1rem">Unit ${unit.id}</div>
+    <div class="topic-hero">
+      <h1>${t.title}</h1>
+      <p>${t.def}</p>
+    </div>
+    <div class="exam-box">
+      <h3>⭐ Exam Key Points</h3>
+      <div class="exam-points">${t.examPts.map(p=>`<div class="exam-point">${p}</div>`).join('')}</div>
+    </div>
+    <div class="content-card" style="margin-bottom:1.5rem">
+      <h3>Deep Explanation</h3>
+      <p style="color:var(--muted);line-height:1.7;font-size:.95rem">${t.exp}</p>
+    </div>
+    <div class="content-grid">
+      <div class="content-card">
+        <h3>Key Points</h3>
+        <ul class="kp-list">${t.kp.map(k=>`<li>${k}</li>`).join('')}</ul>
+      </div>
+      <div class="content-card">
+        <h3>Real-Life Examples</h3>
+        <div class="tags">${t.examples.map(e=>`<span class="tag">${e}</span>`).join('')}</div>
+      </div>
+    </div>
+    <div class="content-grid">
+      <div class="content-card">
+        <h3>Advantages</h3>
+        <div class="tags">${t.adv.map(a=>`<span class="tag adv">✓ ${a}</span>`).join('')}</div>
+      </div>
+      <div class="content-card">
+        <h3>Disadvantages</h3>
+        <div class="tags">${t.dis.map(d=>`<span class="tag dis">✗ ${d}</span>`).join('')}</div>
+      </div>
+    </div>`;
+  showPage('topic');
+  addXP(10, 'Studied: '+t.title);
+}
+
+// ========== UNITS RENDER ==========
+function renderUnits() {
+  const g = document.getElementById('units-grid');
+  g.innerHTML = UNITS.map(u=>`
+    <div class="unit-card ${u.cls}" onclick="showUnit(${u.id})">
+      <div class="unit-icon">${u.icon}</div>
+      <div class="chip ${u.cls}" style="margin-bottom:.5rem;font-size:10px">Unit ${u.id}</div>
+      <div class="unit-title">${u.title}</div>
+      <div class="unit-count">${u.topics.length} topics</div>
+      <div class="unit-progress"><div class="unit-progress-fill" style="width:0%;background:${u.color}"></div></div>
+    </div>`).join('');
+}
+
+// ========== CPU SCHEDULING ==========
+const PROCESS_COLORS = ['#a855f7','#22d3ee','#34d399','#f59e0b','#ef4444','#ec4899'];
+let cpuProcesses = [];
+
+function initCPUSim() {
+  cpuProcesses = [
+    {pid:'P1',arrival:0,burst:6,priority:2},
+    {pid:'P2',arrival:1,burst:8,priority:1},
+    {pid:'P3',arrival:2,burst:7,priority:3},
+    {pid:'P4',arrival:3,burst:3,priority:2}
+  ];
+  renderProcessInputs();
+}
+
+function randomizeCPU() {
+  cpuProcesses = ['P1','P2','P3','P4','P5'].slice(0,Math.floor(Math.random()*2)+3).map((pid,i)=>({
+    pid, arrival:Math.floor(Math.random()*5), burst:Math.floor(Math.random()*8)+2, priority:Math.floor(Math.random()*4)+1
+  }));
+  renderProcessInputs();
+  runCPUSim();
+}
+
+function renderProcessInputs() {
+  const div = document.getElementById('process-inputs');
+  div.innerHTML = cpuProcesses.map((p,i)=>`
+    <div style="padding:.75rem 1rem;border-radius:10px;background:rgba(${i===0?'168,85,247':i===1?'34,211,238':i===2?'52,211,153':i===3?'245,158,11':'239,68,68'},0.08);border:1px solid rgba(${i===0?'168,85,247':i===1?'34,211,238':i===2?'52,211,153':i===3?'245,158,11':'239,68,68'},0.2);display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+      <strong style="color:${PROCESS_COLORS[i]};min-width:24px">${p.pid}</strong>
+      <span style="font-size:12px;color:var(--muted)">Arrival: <input type="number" value="${p.arrival}" min="0" max="20" style="width:40px;padding:2px 4px;background:rgba(255,255,255,0.1);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px" onchange="cpuProcesses[${i}].arrival=+this.value;runCPUSim()"></span>
+      <span style="font-size:12px;color:var(--muted)">Burst: <input type="number" value="${p.burst}" min="1" max="20" style="width:40px;padding:2px 4px;background:rgba(255,255,255,0.1);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px" onchange="cpuProcesses[${i}].burst=+this.value;runCPUSim()"></span>
+      <span style="font-size:12px;color:var(--muted)">Priority: <input type="number" value="${p.priority}" min="1" max="10" style="width:40px;padding:2px 4px;background:rgba(255,255,255,0.1);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px" onchange="cpuProcesses[${i}].priority=+this.value;runCPUSim()"></span>
+    </div>`).join('');
+}
+
+function runCPUSim() {
+  const algo = document.getElementById('cpu-algo').value;
+  const procs = JSON.parse(JSON.stringify(cpuProcesses)).sort((a,b)=>a.arrival-b.arrival);
+  let gantt = [], time=0, remaining = procs.map(p=>({...p, rem:p.burst, done:false, start:-1, end:-1, wt:0}));
+  
+  if(algo==='fcfs') {
+    let sorted = [...remaining].sort((a,b)=>a.arrival-b.arrival);
+    sorted.forEach(p=>{
+      if(time<p.arrival) time=p.arrival;
+      gantt.push({pid:p.pid,start:time,end:time+p.burst,color:PROCESS_COLORS[cpuProcesses.findIndex(pp=>pp.pid===p.pid)]});
+      p.start=time; p.end=time+p.burst; time+=p.burst;
+    });
+  } else if(algo==='sjf') {
+    let done=0,rem=[...remaining];
+    while(done<rem.length){
+      let available=rem.filter(p=>!p.done&&p.arrival<=time);
+      if(!available.length){time++;continue;}
+      let p=available.sort((a,b)=>a.burst-b.burst)[0];
+      gantt.push({pid:p.pid,start:time,end:time+p.burst,color:PROCESS_COLORS[cpuProcesses.findIndex(pp=>pp.pid===p.pid)]});
+      p.start=time; p.end=time+p.burst; time+=p.burst; p.done=true; done++;
+    }
+  } else if(algo==='rr') {
+    const q=3; let queue=[],rem=[...remaining],t=0,done=0;
+    let ready=[...rem].sort((a,b)=>a.arrival-b.arrival);
+    queue.push(ready.shift());
+    while(done<rem.length){
+      if(!queue.length){t++;if(ready.length&&ready[0].arrival<=t)queue.push(ready.shift());continue;}
+      let p=queue.shift();
+      let run=Math.min(q,p.rem);
+      gantt.push({pid:p.pid,start:t,end:t+run,color:PROCESS_COLORS[cpuProcesses.findIndex(pp=>pp.pid===p.pid)]});
+      t+=run; p.rem-=run;
+      while(ready.length&&ready[0].arrival<=t) queue.push(ready.shift());
+      if(p.rem>0) queue.push(p);
+      else{p.done=true;p.end=t;done++;}
+    }
+  } else if(algo==='priority') {
+    let done=0,rem=[...remaining];
+    while(done<rem.length){
+      let available=rem.filter(p=>!p.done&&p.arrival<=time);
+      if(!available.length){time++;continue;}
+      let p=available.sort((a,b)=>a.priority-b.priority)[0];
+      gantt.push({pid:p.pid,start:time,end:time+p.burst,color:PROCESS_COLORS[cpuProcesses.findIndex(pp=>pp.pid===p.pid)]});
+      p.start=time; p.end=time+p.burst; time+=p.burst; p.done=true; done++;
+    }
+  }
+
+  // Compute metrics
+  const totalTime = gantt.length ? gantt[gantt.length-1].end : 0;
+  let waitTimes = cpuProcesses.map(p=>{
+    let segs = gantt.filter(g=>g.pid===p.pid);
+    let execTime = segs.reduce((s,g)=>s+(g.end-g.start),0);
+    let finishTime = segs.length ? segs[segs.length-1].end : 0;
+    let firstStart = segs.length ? segs[0].start : 0;
+    let wt = finishTime - p.arrival - p.burst;
+    return Math.max(0,wt);
+  });
+  let avgWT = (waitTimes.reduce((s,w)=>s+w,0)/waitTimes.length).toFixed(2);
+  let turnTimes = cpuProcesses.map(p=>{
+    let segs = gantt.filter(g=>g.pid===p.pid);
+    let finishTime = segs.length ? segs[segs.length-1].end : 0;
+    return Math.max(0,finishTime - p.arrival);
+  });
+  let avgTAT = (turnTimes.reduce((s,t)=>s+t,0)/turnTimes.length).toFixed(2);
+
+  drawGantt(gantt, totalTime);
+  
+  document.getElementById('cpu-metrics').innerHTML = `
+    <div class="metric-card"><div class="metric-val">${avgWT}</div><div class="metric-lbl">Avg Waiting Time</div></div>
+    <div class="metric-card"><div class="metric-val">${avgTAT}</div><div class="metric-lbl">Avg Turnaround Time</div></div>
+    <div class="metric-card"><div class="metric-val">${totalTime}</div><div class="metric-lbl">Total Time</div></div>
+    <div class="metric-card"><div class="metric-val">${Math.round(cpuProcesses.reduce((s,p)=>s+p.burst,0)/totalTime*100)}%</div><div class="metric-lbl">CPU Utilization</div></div>`;
+  
+  document.getElementById('gantt-legend').innerHTML = cpuProcesses.map((p,i)=>`
+    <div class="gantt-leg-item"><div class="gantt-leg-color" style="background:${PROCESS_COLORS[i]}"></div>${p.pid} (burst:${p.burst})</div>`).join('');
+}
+
+function drawGantt(gantt, totalTime) {
+  const canvas = document.getElementById('gantt-canvas');
+  const W = Math.max(600, gantt.length > 0 ? gantt[gantt.length-1].end * 30 + 60 : 600);
+  canvas.width = W; canvas.height = 120;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,120);
+  const scale = (W-60)/Math.max(totalTime,1);
+  const barH = 48, barY = 20;
+  
+  gantt.forEach(seg=>{
+    const x = 30+seg.start*scale, w = (seg.end-seg.start)*scale;
+    ctx.fillStyle = seg.color+'33';
+    ctx.strokeStyle = seg.color;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(x,barY,Math.max(w-1,2),barH,6);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = seg.color;
+    ctx.font = 'bold 13px Segoe UI, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if(w > 20) ctx.fillText(seg.pid, x+w/2, barY+barH/2);
+    // time markers
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px Segoe UI, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(seg.start, x, barY+barH+14);
+  });
+  if(gantt.length){
+    const last = gantt[gantt.length-1];
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px Segoe UI, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(last.end, 30+last.end*scale, barY+barH+14);
+  }
+}
+
+// ========== MEMORY SIMULATION ==========
+function initMemSim() {
+  randomizeMem();
+}
+
+function randomizeMem() {
+  const refStr = Array.from({length:12},()=>Math.floor(Math.random()*6)+1);
+  memState.refStr = refStr;
+  runMemSim();
+}
+
+function runMemSim() {
+  const algo = document.getElementById('mem-algo').value;
+  const fc = parseInt(document.getElementById('frame-count').value);
+  memState.frameCount = fc;
+  memState.algo = algo;
+  memState.step = 0;
+  if(memState.autoTimer) clearInterval(memState.autoTimer);
+  
+  // Pre-compute all steps
+  const ref = memState.refStr;
+  let frames = Array(fc).fill(null);
+  let results = [];
+  let history = [];
+  
+  for(let i=0;i<ref.length;i++){
+    const page = ref[i];
+    const hit = frames.includes(page);
+    let evicted = null;
+    
+    if(!hit){
+      const emptySlot = frames.indexOf(null);
+      if(emptySlot !== -1){
+        frames[emptySlot] = page;
+      } else {
+        if(algo==='fifo'){
+          evicted = history[0];
+          frames[frames.indexOf(history[0])] = page;
+          history.shift();
+        } else if(algo==='lru'){
+          // find least recently used
+          let lruIdx = -1, lruTime = Infinity;
+          frames.forEach((f,fi)=>{
+            let lastUse = -1;
+            for(let j=i-1;j>=0;j--){if(ref[j]===f){lastUse=j;break;}}
+            if(lastUse < lruTime){lruTime=lastUse;lruIdx=fi;}
+          });
+          evicted = frames[lruIdx];
+          frames[lruIdx] = page;
+          history = history.filter(h=>h!==evicted);
+        } else {
+          // optimal
+          let optIdx = -1, farthest = -1;
+          frames.forEach((f,fi)=>{
+            let nextUse = ref.indexOf(f, i+1);
+            if(nextUse===-1) nextUse=9999;
+            if(nextUse > farthest){farthest=nextUse;optIdx=fi;}
+          });
+          evicted = frames[optIdx];
+          frames[optIdx] = page;
+          history = history.filter(h=>h!==evicted);
+        }
+      }
+      history.push(page);
+    }
+    results.push({page, frames:[...frames], hit, evicted});
+  }
+  
+  memState.results = results;
+  renderPageStr();
+  renderMemFrames(results[0]);
+  document.getElementById('mem-step-btn').disabled = false;
+  document.getElementById('mem-step-btn').textContent = '▶ Next Step';
+}
+
+function renderPageStr() {
+  const d = document.getElementById('page-str-display');
+  d.innerHTML = memState.refStr.map((p,i)=>`<div class="page-box ${i===memState.step?'active':''}">${p}</div>`).join('');
+}
+
+function renderMemFrames(result) {
+  if(!result) return;
+  const d = document.getElementById('mem-frames');
+  const rows = [];
+  for(let i=0;i<memState.frameCount;i++){
+    const page = result.frames[i];
+    const isNew = !result.hit && page!==null && result.frames[i]===result.page;
+    const cls = page===null?'':'occupied'+(isNew?result.evicted?' replaced':' fault':'');
+    rows.push(`<div class="mem-frame ${cls}">${page!==null?`<span style="font-size:16px;font-weight:700">P${page}</span><span style="font-size:10px;margin-top:2px">Frame ${i}</span>`:''}</div>`);
+  }
+  d.innerHTML = rows.join('');
+  
+  const hits = memState.results.slice(0,memState.step+1).filter(r=>r.hit).length;
+  const faults = memState.step+1 - hits;
+  document.getElementById('mem-metrics').innerHTML = `
+    <div class="metric-card"><div class="metric-val" style="color:var(--neon3)">${hits}</div><div class="metric-lbl">Page Hits</div></div>
+    <div class="metric-card"><div class="metric-val" style="color:var(--danger)">${faults}</div><div class="metric-lbl">Page Faults</div></div>
+    <div class="metric-card"><div class="metric-val">${Math.round(hits/(memState.step+1)*100)}%</div><div class="metric-lbl">Hit Ratio</div></div>
+    <div class="metric-card"><div class="metric-val">${memState.results.length}</div><div class="metric-lbl">Total References</div></div>`;
+  
+  const r = result;
+  document.getElementById('mem-step-info').innerHTML = `Accessing page <strong style="color:var(--neon1)">P${r.page}</strong> — ${r.hit?'<span style="color:var(--neon3)">✓ HIT</span>':'<span style="color:var(--danger)">✗ FAULT</span>'}${r.evicted?' — Replaced P'+r.evicted:''}`;
+}
+
+function memStep() {
+  if(memState.step >= memState.results.length-1) {
+    document.getElementById('mem-step-btn').textContent = 'Done ✓';
+    document.getElementById('mem-step-btn').disabled = true;
+    return;
+  }
+  memState.step++;
+  renderPageStr();
+  renderMemFrames(memState.results[memState.step]);
+}
+
+function memAutoPlay() {
+  if(memState.autoTimer) {clearInterval(memState.autoTimer);memState.autoTimer=null;document.getElementById('mem-auto-btn').textContent='⏩ Auto Play';return;}
+  document.getElementById('mem-auto-btn').textContent='⏸ Pause';
+  memState.autoTimer = setInterval(()=>{
+    if(memState.step>=memState.results.length-1){clearInterval(memState.autoTimer);memState.autoTimer=null;document.getElementById('mem-auto-btn').textContent='⏩ Auto Play';return;}
+    memStep();
+  },700);
+}
+
+// ========== DEADLOCK VISUALIZATION ==========
+const DL_SCENARIOS = {
+  deadlock:{
+    processes:['P1','P2','P3'],
+    resources:['R1','R2'],
+    holds:[['P1','R1'],['P2','R2']],
+    requests:[['P1','R2'],['P2','R1']],
+    detected:true
+  },
+  safe:{
+    processes:['P1','P2'],
+    resources:['R1','R2'],
+    holds:[['P1','R1']],
+    requests:[['P2','R1']],
+    detected:false
+  },
+  partial:{
+    processes:['P1','P2','P3'],
+    resources:['R1','R2','R3'],
+    holds:[['P1','R1'],['P2','R2'],['P3','R3']],
+    requests:[['P1','R2'],['P2','R3']],
+    detected:false
+  }
+};
+
+function renderDeadlock() {
+  const s = DL_SCENARIOS[document.getElementById('dl-scenario').value];
+  const svg = document.getElementById('dl-svg');
+  const W=560,H=340;
+  
+  // Layout: processes on left, resources on right
+  const ppos = s.processes.map((p,i)=>({id:p,x:120,y:60+i*(H-80)/(Math.max(s.processes.length-1,1))}));
+  const rpos = s.resources.map((r,i)=>({id:r,x:440,y:80+i*(H-120)/(Math.max(s.resources.length-1,1))}));
+  const all = [...ppos,...rpos];
+  
+  let paths = '';
+  // Hold edges: process → resource (solid, green)
+  s.holds.forEach(([proc,res])=>{
+    const p=ppos.find(p=>p.id===proc), r=rpos.find(r=>r.id===res);
+    if(p&&r) paths += `<line x1="${p.x+36}" y1="${p.y}" x2="${r.x-18}" y2="${r.y}" stroke="#34d399" stroke-width="1.5" marker-end="url(#darr)" opacity="0.8"/>`;
+  });
+  // Request edges: resource → process (dashed, red if deadlock)
+  const reqColor = s.detected ? '#ef4444' : '#f59e0b';
+  s.requests.forEach(([proc,res])=>{
+    const p=ppos.find(p=>p.id===proc), r=rpos.find(r=>r.id===res);
+    if(p&&r) paths += `<line x1="${r.x-18}" y1="${r.y}" x2="${p.x+36}" y2="${p.y}" stroke="${reqColor}" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#darr2)" opacity="0.85"/>`;
+  });
+  
+  const pNodes = ppos.map(p=>`
+    <g>
+      <circle cx="${p.x}" cy="${p.y}" r="32" fill="rgba(168,85,247,0.12)" stroke="#a855f7" stroke-width="1.5"/>
+      <text x="${p.x}" y="${p.y+5}" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="14" font-weight="600" fill="#c084fc">${p.id}</text>
+    </g>`).join('');
+  
+  const rNodes = rpos.map(r=>`
+    <g>
+      <rect x="${r.x-22}" y="${r.y-22}" width="44" height="44" rx="8" fill="rgba(34,211,238,0.1)" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="${r.x}" y="${r.y+5}" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="13" font-weight="600" fill="#67e8f9">${r.id}</text>
+    </g>`).join('');
+  
+  const labels = [
+    `<text x="80" y="26" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#94a3b8">Processes</text>`,
+    `<text x="420" y="26" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#94a3b8">Resources</text>`,
+    `<text x="180" y="26" font-family="Segoe UI,system-ui,sans-serif" font-size="10" fill="#34d399">━ holds</text>`,
+    `<text x="270" y="26" font-family="Segoe UI,system-ui,sans-serif" font-size="10" fill="${reqColor}">╌ requests</text>`
+  ].join('');
+
+  svg.innerHTML = `
+    <defs>
+      <marker id="darr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#34d399" stroke-width="1.5"/></marker>
+      <marker id="darr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="${reqColor}" stroke-width="1.5"/></marker>
+    </defs>
+    ${paths}${pNodes}${rNodes}${labels}`;
+  
+  document.getElementById('dl-info').style.display='none';
+}
+
+function animateDeadlock() {
+  const val = document.getElementById('dl-scenario').value;
+  const s = DL_SCENARIOS[val];
+  const info = document.getElementById('dl-info');
+  info.style.display='block';
+  if(s.detected){
+    info.className='dl-info dl-detected';
+    info.innerHTML='🔴 <strong>Deadlock Detected!</strong> A circular wait exists in the resource allocation graph. Processes '+s.processes.join(', ')+' are permanently blocked.';
+    addXP(5,'Deadlock detected!');
+  } else {
+    info.className='dl-info dl-safe';
+    info.innerHTML='🟢 <strong>No Deadlock — Safe State.</strong> No circular dependency exists. All processes can eventually complete.';
+    addXP(5,'Analyzed deadlock graph');
+  }
+}
+
+// ========== SIM TAB SWITCH ==========
+function switchSim(id) {
+  document.querySelectorAll('.sim-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.sim-panel').forEach(p=>p.style.display='none');
+  document.getElementById('sim-'+id).style.display='block';
+  event.target.classList.add('active');
+  if(id==='mem'&&!memState.results.length) initMemSim();
+}
+
+// ========== QUIZ ==========
+function initQuiz() {
+  quizState = {qIndex:0, answers:[], started:true, timer:null, timeLeft:30};
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const container = document.getElementById('quiz-container');
+  if(quizState.qIndex >= QUIZ_QUESTIONS.length) { renderScore(); return; }
+  
+  const q = QUIZ_QUESTIONS[quizState.qIndex];
+  const answered = quizState.answers[quizState.qIndex];
+  
+  // Reset timer
+  if(quizState.timer) clearInterval(quizState.timer);
+  if(!answered) {
+    quizState.timeLeft = 30;
+    quizState.timer = setInterval(()=>{
+      quizState.timeLeft--;
+      const t = document.getElementById('q-timer');
+      if(t) { t.textContent = quizState.timeLeft+'s'; t.className='quiz-timer'+(quizState.timeLeft<=10?' warning':''); }
+      if(quizState.timeLeft<=0) { clearInterval(quizState.timer); autoAnswer(); }
+    },1000);
+  }
+  
+  container.innerHTML = `
+    <div class="quiz-header">
+      <span style="font-size:14px;color:var(--muted)">Q ${quizState.qIndex+1}/${QUIZ_QUESTIONS.length}</span>
+      <div class="quiz-prog"><div class="quiz-prog-fill" style="width:${quizState.qIndex/QUIZ_QUESTIONS.length*100}%"></div></div>
+      ${answered?'':'<div class="quiz-timer" id="q-timer">30s</div>'}
+    </div>
+    <div class="question-card">
+      <div class="q-difficulty q-${q.diff}">${q.diff}</div>
+      <div class="question-text">${q.q}</div>
+      <div class="options">
+        ${q.opts.map((opt,i)=>{
+          let cls='option-btn';
+          if(answered!==undefined){
+            if(i===q.correct) cls+=' correct';
+            else if(i===answered&&answered!==q.correct) cls+=' wrong';
+            else cls+=' reveal';
+          }
+          return `<button class="${cls}" onclick="answerQ(${i})" ${answered!==undefined?'disabled':''}>${String.fromCharCode(65+i)}. ${opt}</button>`;
+        }).join('')}
+      </div>
+      ${answered!==undefined?`<div class="explanation"><strong>💡 Explanation:</strong> ${q.exp}</div>`:''}
+    </div>
+    <div class="quiz-nav">
+      <button class="btn-outline" onclick="prevQ()" ${quizState.qIndex===0?'disabled':''} style="padding:8px 20px;font-size:14px">← Prev</button>
+      <span style="font-size:13px;color:var(--muted)">Unit ${q.unit} · ${q.diff}</span>
+      <button class="btn-outline" onclick="nextQ()" ${answered===undefined?'disabled':''} style="padding:8px 20px;font-size:14px">${quizState.qIndex===QUIZ_QUESTIONS.length-1?'Finish ✓':'Next →'}</button>
+    </div>`;
+}
+
+function answerQ(i) {
+  if(quizState.answers[quizState.qIndex]!==undefined) return;
+  clearInterval(quizState.timer);
+  quizState.answers[quizState.qIndex] = i;
+  const q = QUIZ_QUESTIONS[quizState.qIndex];
+  if(i===q.correct) addXP(15,'Correct answer!');
+  renderQuestion();
+}
+
+function autoAnswer() {
+  if(quizState.answers[quizState.qIndex]===undefined){
+    quizState.answers[quizState.qIndex] = -1;
+    renderQuestion();
+  }
+}
+
+function nextQ() { quizState.qIndex = Math.min(quizState.qIndex+1, QUIZ_QUESTIONS.length); renderQuestion(); }
+function prevQ() { quizState.qIndex = Math.max(quizState.qIndex-1, 0); renderQuestion(); }
+
+function renderScore() {
+  clearInterval(quizState.timer);
+  const correct = quizState.answers.filter((a,i)=>a===QUIZ_QUESTIONS[i].correct).length;
+  const pct = Math.round(correct/QUIZ_QUESTIONS.length*100);
+  const grade = pct>=90?'Outstanding! 🏆':pct>=75?'Excellent! 🌟':pct>=60?'Good Job! 👍':pct>=40?'Keep Practicing 📚':'Study More 💪';
+  const badges = [];
+  if(pct>=90) badges.push('🏆 OS Master');
+  if(correct>=5) badges.push('🧠 Memory Expert');
+  if(QUIZ_QUESTIONS.filter((q,i)=>q.unit===4&&quizState.answers[i]===q.correct).length>=3) badges.push('💾 Paging Pro');
+  if(QUIZ_QUESTIONS.filter((q,i)=>q.diff==='hard'&&quizState.answers[i]===q.correct).length>=2) badges.push('🔥 Hard Mode');
+  
+  document.getElementById('quiz-container').innerHTML = `
+    <div class="score-card">
+      <div class="score-num">${pct}%</div>
+      <div class="score-grade">${grade}</div>
+      <p style="color:var(--muted);margin:.5rem 0">${correct} / ${QUIZ_QUESTIONS.length} correct answers</p>
+      ${badges.length?`<div class="achievements">${badges.map(b=>`<div class="achievement">${b}</div>`).join('')}</div>`:''}
+      <div style="display:flex;gap:1rem;justify-content:center;margin-top:1.5rem">
+        <button class="btn-primary" onclick="initQuiz()">Retake Quiz</button>
+        <button class="btn-outline" onclick="showPage('revision')">📖 Revise</button>
+      </div>
+    </div>`;
+  addXP(correct*5, 'Quiz completed');
+}
+
+// ========== FLASHCARDS ==========
+function initFlashcards() {
+  fcIndex = 0; fcFlipped = false;
+  document.getElementById('fc-total').textContent = FLASHCARDS.length;
+  updateCard();
+  renderFCGrid();
+}
+
+function updateCard() {
+  const card = FLASHCARDS[fcIndex];
+  document.getElementById('fc-term').textContent = card.t;
+  document.getElementById('fc-def').textContent = card.d;
+  document.getElementById('fc-num').textContent = fcIndex+1;
+  document.getElementById('flashcard').classList.remove('flipped');
+  fcFlipped = false;
+}
+
+function flipCard() {
+  fcFlipped = !fcFlipped;
+  document.getElementById('flashcard').classList.toggle('flipped', fcFlipped);
+  if(fcFlipped) addXP(2,'Reviewed: '+FLASHCARDS[fcIndex].t);
+}
+
+function nextCard() { fcIndex = (fcIndex+1)%FLASHCARDS.length; updateCard(); }
+function prevCard() { fcIndex = (fcIndex-1+FLASHCARDS.length)%FLASHCARDS.length; updateCard(); }
+
+function renderFCGrid() {
+  document.getElementById('fc-grid').innerHTML = FLASHCARDS.map((c,i)=>`
+    <div class="fc-mini" onclick="fcIndex=${i};updateCard();window.scrollTo(0,0)">
+      <div class="fc-mini-term">${c.t}</div>
+      <div class="fc-mini-def">${c.d.substring(0,60)}...</div>
+    </div>`).join('');
+}
+
+// ========== THREE.JS HERO ==========
+function initThreeJS() {
+  const canvas = document.getElementById('hero-canvas');
+  const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setClearColor(0x000000, 0);
+  
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, canvas.offsetWidth/canvas.offsetHeight, 0.1, 100);
+  camera.position.set(0,0,8);
+  
+  // Resize
+  function resize(){
+    const w=canvas.offsetWidth,h=canvas.offsetHeight;
+    renderer.setSize(w,h,false);
+    camera.aspect=w/h; camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize',resize);
+  
+  // Geometry
+  const objs = [];
+  const shapes = [
+    new THREE.IcosahedronGeometry(0.6,0),
+    new THREE.BoxGeometry(0.7,0.7,0.7),
+    new THREE.OctahedronGeometry(0.6),
+    new THREE.TetrahedronGeometry(0.7),
+    new THREE.DodecahedronGeometry(0.6)
+  ];
+  const colors = [0xa855f7, 0x22d3ee, 0x34d399, 0xf59e0b, 0xec4899, 0x6366f1];
+  
+  for(let i=0;i<18;i++){
+    const geo = shapes[i%shapes.length];
+    const mat = new THREE.MeshPhongMaterial({
+      color:colors[i%colors.length],
+      emissive:colors[i%colors.length],
+      emissiveIntensity:0.2,
+      wireframe: Math.random()>0.6,
+      transparent:true, opacity:0.5+Math.random()*0.4
+    });
+    const mesh = new THREE.Mesh(geo,mat);
+    const r = 2.5+Math.random()*3;
+    const theta = (i/18)*Math.PI*2;
+    const phi = (Math.random()-0.5)*Math.PI*0.8;
+    mesh.position.set(r*Math.cos(theta)*Math.cos(phi), r*Math.sin(phi)*1.5, r*Math.sin(theta)*Math.cos(phi));
+    mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+    const scale = 0.4+Math.random()*0.6;
+    mesh.scale.setScalar(scale);
+    objs.push({mesh, speed:(Math.random()-0.5)*0.01, rotX:(Math.random()-0.5)*0.015, rotY:(Math.random()-0.5)*0.015});
+    scene.add(mesh);
+  }
+  
+  // Connecting lines
+  const lineGeo = new THREE.BufferGeometry();
+  const linePositions = new Float32Array(objs.length*6);
+  lineGeo.setAttribute('position', new THREE.BufferAttribute(linePositions,3));
+  const lineMat = new THREE.LineBasicMaterial({color:0xa855f7,transparent:true,opacity:0.12});
+  const lines = new THREE.LineSegments(lineGeo,lineMat);
+  scene.add(lines);
+  
+  // Particles
+  const partGeo = new THREE.BufferGeometry();
+  const partPos = new Float32Array(400*3);
+  for(let i=0;i<400;i++){
+    partPos[i*3]=(Math.random()-0.5)*14;
+    partPos[i*3+1]=(Math.random()-0.5)*10;
+    partPos[i*3+2]=(Math.random()-0.5)*10;
+  }
+  partGeo.setAttribute('position',new THREE.BufferAttribute(partPos,3));
+  const partMat = new THREE.PointsMaterial({color:0x22d3ee,size:0.035,transparent:true,opacity:0.5});
+  scene.add(new THREE.Points(partGeo,partMat));
+  
+  // Lighting
+  scene.add(new THREE.AmbientLight(0xffffff,0.3));
+  const dL=new THREE.DirectionalLight(0xa855f7,1.5);dL.position.set(5,3,5);scene.add(dL);
+  const dL2=new THREE.DirectionalLight(0x22d3ee,1);dL2.position.set(-5,-3,2);scene.add(dL2);
+  
+  // Mouse
+  let mx=0,my=0;
+  canvas.addEventListener('mousemove',e=>{
+    const r=canvas.getBoundingClientRect();
+    mx=(e.clientX-r.left)/r.width*2-1;
+    my=-(e.clientY-r.top)/r.height*2+1;
+  });
+  
+  let t=0;
+  function animate(){
+    requestAnimationFrame(animate);
+    t+=0.008;
+    
+    objs.forEach((o,i)=>{
+      o.mesh.rotation.x += o.rotX;
+      o.mesh.rotation.y += o.rotY;
+      o.mesh.position.y += Math.sin(t+i)*0.003;
+    });
+    
+    // Update connections between nearby objects
+    let idx=0;
+    for(let i=0;i<objs.length&&idx<objs.length*2;i++){
+      linePositions[idx*3]=objs[i].mesh.position.x;
+      linePositions[idx*3+1]=objs[i].mesh.position.y;
+      linePositions[idx*3+2]=objs[i].mesh.position.z;
+      const j=(i+1)%objs.length;
+      linePositions[(idx+1)*3]=objs[j].mesh.position.x;
+      linePositions[(idx+1)*3+1]=objs[j].mesh.position.y;
+      linePositions[(idx+1)*3+2]=objs[j].mesh.position.z;
+      idx+=2;
+    }
+    lineGeo.attributes.position.needsUpdate=true;
+    
+    camera.position.x += (mx*0.8-camera.position.x)*0.05;
+    camera.position.y += (my*0.4-camera.position.y)*0.05;
+    camera.lookAt(0,0,0);
+    
+    renderer.render(scene,camera);
+  }
+  animate();
+}
+
+// ========== INIT ==========
+window.addEventListener('load',()=>{
+  initThreeJS();
+  document.getElementById('xp-overlay').style.display='block';
+});
+</script>
+</body>
+</html>
